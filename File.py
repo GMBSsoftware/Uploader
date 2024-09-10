@@ -12,6 +12,6 @@ class File:
 
     def check_file_size_under_max_size(self, file, max_size) -> bool:
         if isinstance(file, File):
-            return file.get_file_size <= max_size
+            return file.get_file_size() <= max_size
         else:
-            TypeError
+            raise TypeError("잘못된 인스턴스")

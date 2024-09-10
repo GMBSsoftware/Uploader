@@ -1,7 +1,7 @@
 from GUI import GUI
-import tkinter as tk
+from tkinterdnd2 import TkinterDnD, DND_FILES
 
-root = tk.Tk()
+root = TkinterDnD.Tk()
 gui = GUI(root)
 gui.show()
 

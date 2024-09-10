@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog
 from tkinter import messagebox
+from tkinterdnd2 import DND_FILES
 
 
 class GUI:
@@ -12,14 +12,9 @@ class GUI:
         self.app_height = 250
         # 현재 화면을 나타내는 프레임
         self.current_frame = None
-        self.text_entry = None
-        self.callback_prompter_song = None
-        self.callback_prompter_word = None
-        self.callback_caption_song = None
-        self.file = None
 
     def frame_base(self):
-        self.root.title("Prompter Auto Maker")
+        self.root.title("Uploader")
 
         # 화면 가로 세로 크기
         windows_width = self.root.winfo_screenwidth()
@@ -93,4 +88,20 @@ class GUI:
 
     def show(self):
         self.frame_base()
-        self.frame_home()
+        self.frame_home_and_setting()
+        self.frame_drag_and_drop()
+
+    def frame_drag_and_drop(self):
+        # 파일 드래그 앤 드롭을 위한 리스트박스
+        self.listbox = tk.Listbox(self.root, width=60, height=10)
+        self.listbox.pack(pady=20)
+
+        # 드래그 앤 드롭 기능을 리스트박스에 추가
+        self.listbox.drop_target_register(DND_FILES)
+        self.listbox.dnd_bind("<<Drop>>", self.on_file_drop)
+
+    def on_file_drop(self, event):
+        """파일 드롭 시 호출되는 함수"""
+        files = self.root.tk.splitlist(event.data)  # 여러 파일 드롭 가능
+        for file in files:
+            self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
