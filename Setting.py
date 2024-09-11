@@ -6,7 +6,7 @@ class Setting:
 
         self.address_naver = ""
         self.id_naver = ""
-        self.password_naver = ""
+        self.password_naver = "asdf"
 
-        self.nas_location = ""
+        self.nas_location = "zsxcvsdv"
         self.recorded_vedio = ""
