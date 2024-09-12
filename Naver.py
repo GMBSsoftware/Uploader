@@ -22,4 +22,20 @@ class Naver(Website):
 
     def handle_file(self, file):
         """메일 전송"""
-        pass
+        # 뜰 때까지 기다리고
+        self.util.click(
+            '//*[@id="account"]/div[2]/div/div/ul/li[1]/a/span[1]'
+        )  # 메일 클릭
+        # 뜰 때가지 대기
+        self.util.click('//*[@id="account"]/div[3]/div[2]/div[2]/a')  # 메일쓰기 클릭
+        # 대기
+        # 새창으로 뜨는데 이건 괜찮나?
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
+        self.util.click("")  #
