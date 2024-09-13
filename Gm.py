@@ -14,13 +14,12 @@ class Gm(Website):
 
     def handle_file(self, file):
         """파일 업로드"""
-        # 뜰 때까지 기다리고
-        self.util.click('//*[@id="main-menu"]/li[2]/ul/li[3]/a')  # 컨텐츠 관리 버튼
-        # 여기서 뜰 때까지 기다려야할듯
-        self.util.click('//*[@id="vueapp"]/div[1]/button[1]')  # 추가 버튼
-        # 여기서도 뜰 때까지 기다리기
+        self.util.wait_and_click(
+            '//*[@id="main-menu"]/li[2]/ul/li[3]/a'
+        )  # 컨텐츠 관리 버튼
+        self.util.wait_and_click('//*[@id="vueapp"]/div[1]/button[1]')  # 추가 버튼
         # self.util.click('//*[@id="menu_idx"]')                      # 메뉴 선택 버튼
-        self.util.click('//*[@id="menu_idx"]/option[2]')  # 주일 예배 선택
+        self.util.wait_and_click('//*[@id="menu_idx"]/option[2]')  # 주일 예배 선택
         self.util.click("subject")  # 제목 입력 클릭
         self.util.input_text("뭔가 텍스트")  # 입력하기
         self.util.click(

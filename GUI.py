@@ -1,6 +1,8 @@
 import tkinter as tk
+import os
+from File import File
 from tkinter import messagebox
-from tkinterdnd2 import DND_FILES
+from tkinterdnd2 import TkinterDnD, DND_FILES
 
 
 class GUI:
@@ -12,6 +14,7 @@ class GUI:
         self.app_height = 250
         # 현재 화면을 나타내는 프레임
         self.current_frame = None
+        self.file_list = []
 
     def frame_base(self):
         self.root.title("Uploader")
@@ -100,8 +103,37 @@ class GUI:
         self.listbox.drop_target_register(DND_FILES)
         self.listbox.dnd_bind("<<Drop>>", self.on_file_drop)
 
+        # 실행 버튼 추가
+        self.execute_button = tk.Button(self.root, text="실행", command=self.on_execute)
+        self.execute_button.pack(pady=10)
+
     def on_file_drop(self, event):
         """파일 드롭 시 호출되는 함수"""
         files = self.root.tk.splitlist(event.data)  # 여러 파일 드롭 가능
         for file in files:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
+
+    def on_execute(self):
+        self.file_list = self.create_files_from_list(
+            self.listbox.get(0, tk.END)
+        )  # 리스트박스의 파일 경로로 File 객체 리스트 생성
+        for file in self.file_list:
+            print(file)  # File 객체의 __str__ 메서드 호출로 파일 정보 출력
+
+    def create_files_from_list(self, file_paths):
+        """파일 경로 리스트를 받아서 File 객체 리스트를 반환하는 함수"""
+        file_objects = []
+        for file_path in file_paths:
+            file_name = os.path.basename(file_path)
+            file_location = file_path
+            file_obj = File(file_name, file_location)
+            file_objects.append(file_obj)
+        return file_objects
+
+
+if __name__ == "__main__":
+    root = TkinterDnD.Tk()
+    gui = GUI(root)
+    gui.show()
+
+    gui.root.mainloop()

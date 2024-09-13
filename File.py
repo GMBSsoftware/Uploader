@@ -5,7 +5,13 @@ class File:
     def __init__(self, file_name, location) -> None:
         self.file_name = file_name
         self.file_location = location
-        self.file_size = self.get_file_size(file_name)  # 파일 사이즈 초기화
+        if os.path.isfile(self.file_location):
+            self.file_size = self.get_file_size(
+                self.file_location
+            )  # 파일 사이즈 초기화
+        else:
+            print(f"파일이 존재하지 않습니다: {self.file_location}")
+            self.file_size = 0  # 파일이 존재하지 않을 경우 사이즈를 0으로 설정
 
     def moveTo(self, file, location_to_move):
         pass
@@ -22,3 +28,6 @@ class File:
             return file.get_file_size() <= max_size
         else:
             raise TypeError("잘못된 인스턴스")
+
+    def __str__(self):
+        return f"파일명: {self.file_name}, 위치: {self.file_location}, 크기: {self.file_size} 바이트"

@@ -51,3 +51,7 @@ class Util:
                 f"Element with ID or XPath '{locator}' could not be found within {self.timeout} seconds."
             )
             return None
+
+    def wait_and_click(self, locator):
+        self.wait_for_element(locator)
+        self.click(locator)
