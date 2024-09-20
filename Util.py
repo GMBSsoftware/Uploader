@@ -55,3 +55,11 @@ class Util:
     def wait_and_click(self, locator):
         self.wait_for_element(locator)
         self.click(locator)
+
+    def sleep(self, sleep_time):
+        time.sleep(sleep_time)
+
+    def enter(self):
+        """현재 포커스된 요소에 엔터 키 입력"""
+        actions = ActionChains(self.driver)
+        actions.send_keys(Keys.ENTER).perform()

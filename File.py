@@ -1,19 +1,24 @@
 import os
+import shutil
 
 
 class File:
     def __init__(self, file_name, path) -> None:
         self.file_name = file_name
         self.file_path = path
-        full_path = os.path.join(self.file_path, self.file_name)  # 전체 파일 경로 생성
+        self.full_path = os.path.join(
+            self.file_path, self.file_name
+        )  # 전체 파일 경로 생성
 
-        if os.path.isfile(full_path):  # 전체 경로로 파일 존재 여부 확인
-            self.file_size = self.get_file_size(full_path)  # 파일 사이즈 초기화
+        if os.path.isfile(self.full_path):  # 전체 경로로 파일 존재 여부 확인
+            self.file_size = self.get_file_size(self.full_path)  # 파일 사이즈 초기화
         else:
-            print(f"파일이 존재하지 않습니다: {full_path}")
+            print(f"파일이 존재하지 않습니다: {self.full_path}")
             self.file_size = 0  # 파일이 존재하지 않을 경우 사이즈를 0으로 설정
 
     def moveTo(self, file, path_to_move):
+        if isinstance(file, File):
+            shutil.move(file.full_path, path_to_move + "/" + file.file_name)
         pass
 
     def get_file_size(self, full_path):

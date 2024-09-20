@@ -25,7 +25,18 @@ class Gm(Website):
         self.util.click(
             '//*[@id="vueapp"]/div/div/div/form/div[3]/div/div[2]/label/input'
         )  # 영상 종류 mp4
-        self.util.click("file_01")  # 파일 선택 클릭
+        self.util.click("video_value")  # mp4 파일 선택 클릭
+        self.util.sleep(1)
+        self.util.input_text(file)  # 영상 파일 경로 입력
+        self.util.enter()
+
+        self.util.click("img_file")  # 이미지 파일 선택 클릭
+        self.util.sleep(1)
+        self.util.input_text(
+            "뭔가 이미지랑 영상이랑 변수로 여러개 받아서 처리"
+        )  # 이미지 파일 경로 입력
+        self.util.enter()
+
         # 파일 선택 창에다 주소 붙여넣어주고 이름 입력해주고 하는거
         self.util.click(
             '//*[@id="vueapp"]/div/div/div/form/div[9]/div/button[1]'

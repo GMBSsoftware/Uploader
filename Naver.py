@@ -36,7 +36,9 @@ class Naver(Website):
         self.util.click(
             '//*[@id="content"]/div[3]/div/div[1]/div[6]/div/div[2]/div/label'
         )  # 파일 첨부
-        # 여기도 위치랑 파일명 정해주고 ㅇㅋ 해주는 부분
+        self.util.sleep(1)
+        self.util.input_text(file)  # 영상 파일 경로 입력
+        self.util.enter()
         # 뭔가 파일 로딩 될 때까지 기다려야되나?
         self.util.click(
             '//*[@id="content"]/div[2]/div[1]/div/button[1]'

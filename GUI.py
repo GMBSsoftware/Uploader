@@ -145,6 +145,7 @@ class GUI:
             ("네이버 비밀번호", self.setting.password_naver),
             ("메일 받는 사람", self.setting.receive_email),
             ("저장할 나스 위치", self.setting.nas_path),
+            ("타이틀 이미지", self.setting.title_image),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
@@ -166,6 +167,7 @@ class GUI:
         self.setting.password_naver = self.entry_widgets[3].get()
         self.setting.receive_email = self.entry_widgets[4].get()
         self.setting.nas_path = self.entry_widgets[5].get()
+        self.setting.title_image = self.entry_widgets[6].get()
 
     def clear_widgets(self):
         self.entry_widgets.clear()
