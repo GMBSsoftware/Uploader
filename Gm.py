@@ -12,8 +12,20 @@ class Gm(Website):
             '//*[@id="tab-login"]/div/div/div/div[3]/button',
         )
 
-    def handle_file(self, file):
-        """파일 업로드"""
+    def handle_file(self, **kwargs):
+        """파일 업로드
+        vedio, image 변수
+        """
+
+        valid_keys = {'vedio', 'image'}  # 허용되는 키 리스트
+
+        for key in kwargs:
+            if key not in valid_keys:
+                raise ValueError(f"Invalid key: {key}")
+
+        vedio = kwargs.get('vedio', None)  # 키 'vedio'가 없으면 기본값 None
+        image = kwargs.get('image', None)  # 키 'image'가 없으면 기본값 None
+
         self.util.wait_and_click(
             '//*[@id="main-menu"]/li[2]/ul/li[3]/a'
         )  # 컨텐츠 관리 버튼
@@ -27,14 +39,12 @@ class Gm(Website):
         )  # 영상 종류 mp4
         self.util.click("video_value")  # mp4 파일 선택 클릭
         self.util.sleep(1)
-        self.util.input_text(file)  # 영상 파일 경로 입력
+        self.util.input_text(vedio)  # 영상 파일 경로 입력
         self.util.enter()
 
         self.util.click("img_file")  # 이미지 파일 선택 클릭
         self.util.sleep(1)
-        self.util.input_text(
-            "뭔가 이미지랑 영상이랑 변수로 여러개 받아서 처리"
-        )  # 이미지 파일 경로 입력
+        self.util.input_text(image)  # 이미지 파일 경로 입력
         self.util.enter()
 
         # 파일 선택 창에다 주소 붙여넣어주고 이름 입력해주고 하는거
