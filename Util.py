@@ -59,6 +59,11 @@ class Util:
     def sleep(self, sleep_time):
         time.sleep(sleep_time)
 
+    def send_key(self, find_target, send_content):
+        """셀레니움"""
+        target = self.driver.find_element(By.ID, find_target)
+        target.send_keys(send_content)
+
     def enter(self):
         """현재 포커스된 요소에 엔터 키 입력"""
         actions = ActionChains(self.driver)

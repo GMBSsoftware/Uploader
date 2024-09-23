@@ -1,10 +1,12 @@
 import tkinter as tk
-import os
+import os, time
 from File import File
 from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
 from Setting import Setting
+from Naver import Naver
+from Gm import Gm
 
 
 class GUI:
@@ -120,17 +122,35 @@ class GUI:
         self.listbox.drop_target_register(DND_FILES)
         self.listbox.dnd_bind("<<Drop>>", self.on_file_drop)
 
-        # 업로드 버튼
-        self.upload_button = tk.Button(
-            self.root, text="업로드", command=self.on_upload, relief="groove"
+        # 실행 버튼
+        self.run_button = tk.Button(
+            self.root, text="실행", command=self.on_run, relief="groove"
         )
-        self.upload_button.place(x=520, y=100, width=70, height=70)
+        self.run_button.place(x=520, y=100, width=70, height=70)
 
         # 목록 지우기 버튼
         self.delete_button = tk.Button(
             self.root, text="목록\n지우기", command=self.on_delete, relief="groove"
         )
         self.delete_button.place(x=520, y=200, width=70, height=70)
+
+        # 홈페이지 업로드 버튼
+        self.upload_button = tk.Button(
+            self.root, text="홈페이지\n업로드", command=self.on_upload, relief="groove"
+        )
+        self.upload_button.place(x=120, y=300, width=50, height=50)
+
+        # 메일 전송 버튼
+        self.send_email_button = tk.Button(
+            self.root, text="메일\n전송", command=self.on_send_email, relief="groove"
+        )
+        self.send_email_button.place(x=220, y=300, width=50, height=50)
+
+        # 나스 이동 버튼
+        self.file_move_button = tk.Button(
+            self.root, text="나스\n이동", command=self.on_file_move, relief="groove"
+        )
+        self.file_move_button.place(x=320, y=300, width=50, height=50)
 
     def frame_setting(self):
         # 설정 프레임 내의 라벨 추가
@@ -178,26 +198,68 @@ class GUI:
         for file in files:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
-    def on_upload(self):
-        self.file_list = self.create_files_from_list(
-            self.listbox.get(0, tk.END)
-        )  # 리스트박스의 파일 경로로 File 객체 리스트 생성
+    def on_run(self):
+        self.create_files_from_list()
         for file in self.file_list:
             print("file : ", file)  # File 객체의 __str__ 메서드 호출로 파일 정보 출력
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
         self.listbox.delete(0, tk.END)  # 리스트박스의 모든 항목 삭제
+        self.file_list.clear()
 
-    def create_files_from_list(self, file_paths):
-        """파일 경로 리스트를 받아서 File 객체 리스트를 반환하는 함수"""
-        file_objects = []
+    def on_upload(self):
+        self.create_files_from_list()
+        # 이름 정규화 해야된다.
+        gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
+        gm.login()
+        result = gm.handle_file()
+        if result:
+            messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
+        else:
+            messagebox.showinfo("알림", "광명 홈페이지에 업로드를 실패했습니다.")
+
+    def on_send_email(self):
+        self.create_files_from_list()
+        if self.file_list[0].get_file_size() >= 524288000:  # 500MB = 524288000B
+            messagebox.showinfo(
+                "알림", "파일 크기가 500MB를 초과하여 전송이 불가능합니다."
+            )
+            return
+        print("전송할 파일 : ", self.file_list[0])
+        naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
+        naver.login()
+        result = naver.handle_file(
+            file=str(self.file_list[0]), receiver=self.setting.receive_email
+        )
+        if result:
+            messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
+        else:
+            messagebox.showinfo("알림", "메일 전송을 실패했습니다.")
+
+    def on_file_move(self):
+        self.create_files_from_list()
+        self.file_list[0].moveTo(self.file_list[0], setting.nas_path)
+
+        if os.path.isfile(setting.nas_path + "\\" + self.file_list[0].file_name):
+            messagebox.showinfo("알림", "파일 이동을 완료했습니다.")
+        else:
+            messagebox.showinfo("알림", "파일 이동을 실패했습니다.")
+
+    def create_files_from_list(self):
+        """파일 경로 리스트를 받아서 File 객체로 만들어 self.file_list에 저장하는 함수
+        였는데
+        받아서 홈페이지용 영상인지, 홈페이지용 이미지인지, 등등도 분류해야할듯. 파일 크기 체크도 여기서 해야하나...
+
+        """
+        file_paths = self.listbox.get(
+            0, tk.END
+        )  # 리스트박스의 파일 경로로 File 객체 리스트 생성
         for file_path in file_paths:
             file_name = os.path.basename(file_path)
             file_path = os.path.dirname(file_path)
             file_obj = File(file_name, file_path)
-            file_objects.append(file_obj)
-        return file_objects
+            self.file_list.append(file_obj)
 
 
 setting = Setting()

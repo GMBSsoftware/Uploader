@@ -30,13 +30,15 @@ class Website(ABC):
         self.util.wait_for_element(login_btn_locator)
 
         # id, password 입력
-        self.util.click(id_text_locator)
+        self.util.wait_and_click(id_text_locator)
         self.util.input_text(self.id)
         self.util.click(password_text_locator)
         self.util.input_text(self.password)
 
         # 로그인 버튼 클릭
         self.util.click(login_btn_locator)
+
+        self.util.sleep(1)
 
     @abstractmethod
     def handle_file(self, file):
