@@ -17,7 +17,6 @@ class Website(ABC):
             service=ChromeService(ChromeDriverManager().install())
         )
         self.driver.set_page_load_timeout(self.timeout)
-        self.setting = Setting()
         self.util = Util(self.driver)
 
     def login(self, id_text_locator, password_text_locator, login_btn_locator):

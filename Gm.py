@@ -38,9 +38,13 @@ class Gm(Website):
         )  # 영상 종류 mp4
         self.util.send_key("video_value", vedio)  # mp4 파일
         self.util.send_key("img_file", image)  # 이미지 파일
-        self.util.click(
-            '//*[@id="vueapp"]/div/div/div/form/div[9]/div/button[1]'
-        )  # 저장 버튼
+        # self.util.click(
+        #    '//*[@id="vueapp"]/div/div/div/form/div[9]/div/button[1]'
+        # )  # 저장 버튼
+
+        self.util.wait_for_element(
+            '//*[@id="btn_delete"]'
+        )  # 삭제 버튼 나오면 정상 업로드 완료.
 
         # 대기를 얼마나 하지?
         self.util.sleep(60)

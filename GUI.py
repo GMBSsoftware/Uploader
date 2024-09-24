@@ -114,9 +114,28 @@ class GUI:
         self.page_home()
 
     def frame_drag_and_drop(self):
+        # 엔트리 위젯 추가를 위한 데이터
+        entries = [
+            ("날짜", self.setting.id_gm),
+            ("예배 종류", self.setting.password_gm),
+            ("주제", self.setting.id_naver),
+            ("설교자(신급)", self.setting.password_naver),
+        ]
+
+        for i, (label_text, default_value) in enumerate(entries):
+            # 레이블 추가
+            entry_label = tk.Label(self.root, text=label_text)
+            entry_label.place(x=50, y=10 + (i * 30), anchor="nw")  # y 좌표 조정
+
+            # 엔트리 추가
+            entry = tk.Entry(self.root, width=40, justify="left")
+            entry.place(x=200, y=10 + (i * 30))  # y 좌표 조정
+            entry.insert(0, default_value)  # 기본값 설정
+            self.entry_widgets.append(entry)  # 엔트리 위젯 저장
+
         # 파일 드래그 앤 드롭을 위한 리스트박스
         self.listbox = tk.Listbox(self.root, width=60, height=10)
-        self.listbox.place(x=50, y=100)
+        self.listbox.place(x=50, y=150)
 
         # 드래그 앤 드롭 기능을 리스트박스에 추가
         self.listbox.drop_target_register(DND_FILES)
@@ -138,19 +157,19 @@ class GUI:
         self.upload_button = tk.Button(
             self.root, text="홈페이지\n업로드", command=self.on_upload, relief="groove"
         )
-        self.upload_button.place(x=120, y=300, width=50, height=50)
+        self.upload_button.place(x=120, y=330, width=50, height=50)
 
         # 메일 전송 버튼
         self.send_email_button = tk.Button(
             self.root, text="메일\n전송", command=self.on_send_email, relief="groove"
         )
-        self.send_email_button.place(x=220, y=300, width=50, height=50)
+        self.send_email_button.place(x=220, y=330, width=50, height=50)
 
         # 나스 이동 버튼
         self.file_move_button = tk.Button(
             self.root, text="나스\n이동", command=self.on_file_move, relief="groove"
         )
-        self.file_move_button.place(x=320, y=300, width=50, height=50)
+        self.file_move_button.place(x=320, y=330, width=50, height=50)
 
     def frame_setting(self):
         # 설정 프레임 내의 라벨 추가
@@ -165,7 +184,8 @@ class GUI:
             ("네이버 비밀번호", self.setting.password_naver),
             ("메일 받는 사람", self.setting.receive_email),
             ("저장할 나스 위치", self.setting.nas_path),
-            ("타이틀 이미지", self.setting.title_image),
+            ("주일 타이틀 이미지", self.setting.title_image_sunday),
+            ("수요 타이틀 이미지", self.setting.title_image_wednesday),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
@@ -187,7 +207,8 @@ class GUI:
         self.setting.password_naver = self.entry_widgets[3].get()
         self.setting.receive_email = self.entry_widgets[4].get()
         self.setting.nas_path = self.entry_widgets[5].get()
-        self.setting.title_image = self.entry_widgets[6].get()
+        self.setting.title_image_sunday = self.entry_widgets[6].get()
+        self.setting.title_image_wednesday = self.entry_widgets[7].get()
 
     def clear_widgets(self):
         self.entry_widgets.clear()
@@ -210,14 +231,15 @@ class GUI:
 
     def on_upload(self):
         self.create_files_from_list()
-        # 이름 정규화 해야된다.
+        # 이름 정규화 해야된다. 정규화 이름을 handle_file메서드 안에서 실행해야되나...? 아님 또 변수로 넣어줘야되나?
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
-        result = gm.handle_file()
+        result = gm.handle_file(file=self, image=self.setting.title_image_요일)
         if result:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
         else:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 실패했습니다.")
+        self.on_delete()
 
     def on_send_email(self):
         self.create_files_from_list()
@@ -236,6 +258,7 @@ class GUI:
             messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
         else:
             messagebox.showinfo("알림", "메일 전송을 실패했습니다.")
+        self.on_delete()
 
     def on_file_move(self):
         self.create_files_from_list()
@@ -245,6 +268,7 @@ class GUI:
             messagebox.showinfo("알림", "파일 이동을 완료했습니다.")
         else:
             messagebox.showinfo("알림", "파일 이동을 실패했습니다.")
+        self.on_delete()
 
     def create_files_from_list(self):
         """파일 경로 리스트를 받아서 File 객체로 만들어 self.file_list에 저장하는 함수
