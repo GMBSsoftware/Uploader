@@ -1,5 +1,5 @@
 import tkinter as tk
-import os, time
+import os
 from File import File
 from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
@@ -20,7 +20,11 @@ class GUI:
         self.current_frame = None
         self.file_list = []
         self.setting = setting
-        self.entry_widgets = []  # 엔트리 위젯(설정 값)을 저장할 리스트 추가
+        self.date, self.type = self.setting.get_date_and_type()
+        self.entry_widgets_setting = []  # 엔트리 위젯(설정 값)을 저장할 리스트 추가
+        self.entry_widgets_home = (
+            []
+        )  # 엔트리 위젯(홈에서 날짜, 요일, 주제 등)을 저장할 리스트 추가
         self.frame_base()
 
     def frame_base(self):
@@ -116,22 +120,22 @@ class GUI:
     def frame_drag_and_drop(self):
         # 엔트리 위젯 추가를 위한 데이터
         entries = [
-            ("날짜", self.setting.id_gm),
-            ("예배 종류", self.setting.password_gm),
-            ("주제", self.setting.id_naver),
-            ("설교자(신급)", self.setting.password_naver),
+            ("날짜", self.date.strftime("%Y-%m-%d")),
+            ("예배 종류", self.type),
+            ("주제", ""),
+            ("설교자(신급)", "주중심 목사"),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
             # 레이블 추가
             entry_label = tk.Label(self.root, text=label_text)
-            entry_label.place(x=50, y=10 + (i * 30), anchor="nw")  # y 좌표 조정
+            entry_label.place(x=50, y=20 + (i * 30), anchor="nw")  # y 좌표 조정
 
             # 엔트리 추가
             entry = tk.Entry(self.root, width=40, justify="left")
-            entry.place(x=200, y=10 + (i * 30))  # y 좌표 조정
+            entry.place(x=200, y=20 + (i * 30))  # y 좌표 조정
             entry.insert(0, default_value)  # 기본값 설정
-            self.entry_widgets.append(entry)  # 엔트리 위젯 저장
+            self.entry_widgets_home.append(entry)  # 엔트리 위젯 저장
 
         # 파일 드래그 앤 드롭을 위한 리스트박스
         self.listbox = tk.Listbox(self.root, width=60, height=10)
@@ -145,13 +149,13 @@ class GUI:
         self.run_button = tk.Button(
             self.root, text="실행", command=self.on_run, relief="groove"
         )
-        self.run_button.place(x=520, y=100, width=70, height=70)
+        self.run_button.place(x=520, y=150, width=70, height=70)
 
         # 목록 지우기 버튼
         self.delete_button = tk.Button(
             self.root, text="목록\n지우기", command=self.on_delete, relief="groove"
         )
-        self.delete_button.place(x=520, y=200, width=70, height=70)
+        self.delete_button.place(x=520, y=250, width=70, height=70)
 
         # 홈페이지 업로드 버튼
         self.upload_button = tk.Button(
@@ -197,21 +201,21 @@ class GUI:
             entry = tk.Entry(self.root, width=40, justify="left")
             entry.place(x=200, y=90 + (i * 30))  # y 좌표 조정
             entry.insert(0, default_value)  # 기본값 설정
-            self.entry_widgets.append(entry)  # 엔트리 위젯 저장
+            self.entry_widgets_setting.append(entry)  # 엔트리 위젯 저장
 
     def save_settings(self):
         """엔트리 값을 setting에 저장하는 함수"""
-        self.setting.id_gm = self.entry_widgets[0].get()
-        self.setting.password_gm = self.entry_widgets[1].get()
-        self.setting.id_naver = self.entry_widgets[2].get()
-        self.setting.password_naver = self.entry_widgets[3].get()
-        self.setting.receive_email = self.entry_widgets[4].get()
-        self.setting.nas_path = self.entry_widgets[5].get()
-        self.setting.title_image_sunday = self.entry_widgets[6].get()
-        self.setting.title_image_wednesday = self.entry_widgets[7].get()
+        self.setting.id_gm = self.entry_widgets_setting[0].get()
+        self.setting.password_gm = self.entry_widgets_setting[1].get()
+        self.setting.id_naver = self.entry_widgets_setting[2].get()
+        self.setting.password_naver = self.entry_widgets_setting[3].get()
+        self.setting.receive_email = self.entry_widgets_setting[4].get()
+        self.setting.nas_path = self.entry_widgets_setting[5].get()
+        self.setting.title_image_sunday = self.entry_widgets_setting[6].get()
+        self.setting.title_image_wednesday = self.entry_widgets_setting[7].get()
 
     def clear_widgets(self):
-        self.entry_widgets.clear()
+        self.entry_widgets_setting.clear()
 
     def on_file_drop(self, event):
         """파일 드롭 시 호출되는 함수"""
@@ -284,6 +288,9 @@ class GUI:
             file_path = os.path.dirname(file_path)
             file_obj = File(file_name, file_path)
             self.file_list.append(file_obj)
+
+    def rename(self, old_name, new_name):
+        os.rename(old_name, new_name)
 
 
 setting = Setting()

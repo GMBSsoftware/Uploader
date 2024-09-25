@@ -47,4 +47,6 @@ class Gm(Website):
         )  # 삭제 버튼 나오면 정상 업로드 완료.
 
         # 대기를 얼마나 하지?
-        self.util.sleep(60)
+        self.util.sleep(10)
+
+        return True

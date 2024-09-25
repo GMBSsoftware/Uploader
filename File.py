@@ -9,6 +9,10 @@ class File:
         self.full_path = os.path.join(
             self.file_path, self.file_name
         )  # 전체 파일 경로 생성
+        self.date = ""
+        self.type = ""
+        self.subject = ""
+        self.name = ""
 
         if os.path.isfile(self.full_path):  # 전체 경로로 파일 존재 여부 확인
             self.file_size = self.get_file_size()  # 파일 사이즈 초기화

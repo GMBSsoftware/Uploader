@@ -1,4 +1,4 @@
-import time
+import time, datetime
 import pyperclip
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains, Keys
