@@ -1,16 +1,16 @@
 import tkinter as tk
-import os
-from File import File
+import os, datetime
 from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
 from Setting import Setting
+from Util import Util
 from Naver import Naver
 from Gm import Gm
 
 
 class GUI:
-    def __init__(self, root, setting) -> None:
+    def __init__(self, root) -> None:
         self.version = "Ver1.0"
         self.root = root
         # 생성할 프로그램 가로 세로 크기
@@ -19,8 +19,13 @@ class GUI:
         # 현재 화면을 나타내는 프레임
         self.current_frame = None
         self.file_list = []
-        self.setting = setting
-        self.date, self.type = self.setting.get_date_and_type()
+        self.util = Util()
+        self.util.create_new_folder(
+            setting.nas_path,
+            datetime.datetime.now().year,
+            datetime.datetime.now().month,
+        )
+        self.date, self.type = self.util.get_date_and_type()
         self.entry_widgets_setting = []  # 엔트리 위젯(설정 값)을 저장할 리스트 추가
         self.entry_widgets_home = (
             []
@@ -109,6 +114,11 @@ class GUI:
 
     def on_home_click(self):
         self.save_settings()
+        self.util.create_new_folder(
+            setting.nas_path,
+            datetime.datetime.now().year,
+            datetime.datetime.now().month,
+        )
         self.page_home()
 
     def on_setting_click(self):
@@ -182,14 +192,14 @@ class GUI:
 
         # 엔트리 위젯 추가를 위한 데이터
         entries = [
-            ("광명 홈페이지 아이디", self.setting.id_gm),
-            ("광명 홈페이지 비밀번호", self.setting.password_gm),
-            ("네이버 아이디", self.setting.id_naver),
-            ("네이버 비밀번호", self.setting.password_naver),
-            ("메일 받는 사람", self.setting.receive_email),
-            ("저장할 나스 위치", self.setting.nas_path),
-            ("주일 타이틀 이미지", self.setting.title_image_sunday),
-            ("수요 타이틀 이미지", self.setting.title_image_wednesday),
+            ("광명 홈페이지 아이디", setting.id_gm),
+            ("광명 홈페이지 비밀번호", setting.password_gm),
+            ("네이버 아이디", setting.id_naver),
+            ("네이버 비밀번호", setting.password_naver),
+            ("메일 받는 사람", setting.receive_email),
+            ("저장할 나스 위치", setting.nas_path),
+            ("주일 타이틀 이미지", setting.title_image_sunday),
+            ("수요 타이틀 이미지", setting.title_image_wednesday),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
@@ -205,14 +215,14 @@ class GUI:
 
     def save_settings(self):
         """엔트리 값을 setting에 저장하는 함수"""
-        self.setting.id_gm = self.entry_widgets_setting[0].get()
-        self.setting.password_gm = self.entry_widgets_setting[1].get()
-        self.setting.id_naver = self.entry_widgets_setting[2].get()
-        self.setting.password_naver = self.entry_widgets_setting[3].get()
-        self.setting.receive_email = self.entry_widgets_setting[4].get()
-        self.setting.nas_path = self.entry_widgets_setting[5].get()
-        self.setting.title_image_sunday = self.entry_widgets_setting[6].get()
-        self.setting.title_image_wednesday = self.entry_widgets_setting[7].get()
+        setting.id_gm = self.entry_widgets_setting[0].get()
+        setting.password_gm = self.entry_widgets_setting[1].get()
+        setting.id_naver = self.entry_widgets_setting[2].get()
+        setting.password_naver = self.entry_widgets_setting[3].get()
+        setting.receive_email = self.entry_widgets_setting[4].get()
+        setting.nas_path = self.entry_widgets_setting[5].get()
+        setting.title_image_sunday = self.entry_widgets_setting[6].get()
+        setting.title_image_wednesday = self.entry_widgets_setting[7].get()
 
     def clear_widgets(self):
         self.entry_widgets_setting.clear()
@@ -224,7 +234,7 @@ class GUI:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
     def on_run(self):
-        self.create_files_from_list()
+        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
         for file in self.file_list:
             print("file : ", file)  # File 객체의 __str__ 메서드 호출로 파일 정보 출력
 
@@ -234,20 +244,24 @@ class GUI:
         self.file_list.clear()
 
     def on_upload(self):
-        self.create_files_from_list()
+        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
+        if not self.util.check_one_file(self.file_list):
+            return
         # 이름 정규화 해야된다. 정규화 이름을 handle_file메서드 안에서 실행해야되나...? 아님 또 변수로 넣어줘야되나?
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
-        result = gm.handle_file(file=self, image=self.setting.title_image_요일)
+        result = gm.handle_file(file=self, image=setting.title_image_요일)
         if result:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
-        else:
-            messagebox.showinfo("알림", "광명 홈페이지에 업로드를 실패했습니다.")
         self.on_delete()
 
     def on_send_email(self):
-        self.create_files_from_list()
-        if self.file_list[0].get_file_size() >= 524288000:  # 500MB = 524288000B
+        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
+        if not self.util.check_one_file(self.file_list):
+            return
+        if not self.util.is_under_file_size(
+            self.file_list[0], 524288000
+        ):  # 500MB = 524288000B
             messagebox.showinfo(
                 "알림", "파일 크기가 500MB를 초과하여 전송이 불가능합니다."
             )
@@ -256,47 +270,40 @@ class GUI:
         naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
         naver.login()
         result = naver.handle_file(
-            file=str(self.file_list[0]), receiver=self.setting.receive_email
+            file=str(self.file_list[0]), receiver=setting.receive_email
         )
         if result:
             messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
-        else:
-            messagebox.showinfo("알림", "메일 전송을 실패했습니다.")
         self.on_delete()
 
     def on_file_move(self):
-        self.create_files_from_list()
-        self.file_list[0].moveTo(self.file_list[0], setting.nas_path)
+        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
+        if not self.util.check_one_file(self.file_list):
+            return
 
-        if os.path.isfile(setting.nas_path + "\\" + self.file_list[0].file_name):
+        self.file_list[0].moveTo(
+            self.file_list[0],
+            os.path.join(
+                setting.nas_path, str(self.date.year), f"{self.date.month:02d}"
+            ),
+        )
+
+        if os.path.isfile(
+            os.path.join(
+                setting.nas_path,
+                str(self.date.year),
+                f"{self.date.month:02d}",
+                self.file_list[0].file_name,
+            )
+        ):
             messagebox.showinfo("알림", "파일 이동을 완료했습니다.")
-        else:
-            messagebox.showinfo("알림", "파일 이동을 실패했습니다.")
         self.on_delete()
-
-    def create_files_from_list(self):
-        """파일 경로 리스트를 받아서 File 객체로 만들어 self.file_list에 저장하는 함수
-        였는데
-        받아서 홈페이지용 영상인지, 홈페이지용 이미지인지, 등등도 분류해야할듯. 파일 크기 체크도 여기서 해야하나...
-
-        """
-        file_paths = self.listbox.get(
-            0, tk.END
-        )  # 리스트박스의 파일 경로로 File 객체 리스트 생성
-        for file_path in file_paths:
-            file_name = os.path.basename(file_path)
-            file_path = os.path.dirname(file_path)
-            file_obj = File(file_name, file_path)
-            self.file_list.append(file_obj)
-
-    def rename(self, old_name, new_name):
-        os.rename(old_name, new_name)
 
 
 setting = Setting()
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
-    gui = GUI(root, setting)
+    gui = GUI(root)
     gui.show()
 
     gui.root.mainloop()
