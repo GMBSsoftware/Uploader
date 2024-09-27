@@ -97,21 +97,18 @@ class Util:
         return target_date, type
 
     def check_count_file(self, file_list, target_num) -> bool:
-        """파일이"""
+        """파일이 몇 개인지 체크"""
         if isinstance(file_list, list):
             if len(file_list) == target_num:
                 return True
         messagebox.showinfo(
-            "알림", f"파일 개수가 맞지 않습니다. {target_num}개의 파일이 필요합니다."
-        )
+            "알림", f"파일 개수가 맞지 않습니다. {target_num}개의 파일이 필요합니다.\n\n실행 버튼 : 3개 파일.\n\n(파일 크기 작은 순) 1. 메일 전송 2. 홈페이지 업로드 3. 나스 이동\n\n하단 개별 기능 버튼 : 1개 파일.")
         return False
 
     def is_under_file_size(self, file, target_file_size) -> bool:
         if isinstance(file, File):
             if file.get_file_size() < target_file_size:
                 return True
-
-        messagebox.showinfo("알림", "파일 크기가 500MB를 초과하여 전송이 불가능합니다.")
         return False
 
     def rename(self, path, old_name, new_name):
@@ -220,7 +217,7 @@ class Util:
         else:
             messagebox.showinfo("알림", "파일 관련 오류 발생")
 
-    def sort_files_by_size(file_list, reverse=False):
+    def sort_files_by_size(self,file_list, reverse=False):
         """
         파일 리스트를 파일 크기 기준으로 정렬하는 함수.
 

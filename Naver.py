@@ -57,7 +57,7 @@ class Naver(Website):
             '//*[@id="content"]/div[2]/div[1]/div/button[1]'
         )  # 보내기 버튼 클릭
 
-        self.util.wait_for_element(
+        result=self.util.wait_for_element(
             '//*[@id="content"]/div[2]/div/div[1]/div[2]/a[1]'
         )  # 전송 완료 후 메일 목록 버튼 뜰 시 메일 성공적 전송
 
@@ -66,4 +66,7 @@ class Naver(Website):
         self.driver.switch_to.window(original_window)  # 원래 탭으로 전환
         self.driver.close()  # 원래 탭도 닫기
 
-        return True
+        if result!=False:
+            return True
+        else:
+            return False

@@ -253,12 +253,17 @@ class GUI:
             type=self.type,
             subject=self.subject,
             name=self.name,
-            what=all,
+            what="all",
         )
         if file_name is None:
             return None
         self.file_list = self.util.sort_files_by_size(self.file_list)
-        # 오름차순이래
+
+        # 제일 작은 파일부터 처리
+        for action, file_size in [("on_send_email", 524288000), ("on_upload", 1610666666), ("on_file_move", None)]:
+            new_file = self.preprocess(1, action.lower(), file_size)
+            if new_file is not None:
+                getattr(self, action)()  # 메서드 호출
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
@@ -271,11 +276,15 @@ class GUI:
             return
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
+
         if self.type == "주일예배":
-            image = setting.title_image_sunday
+            image_path = setting.title_image_sunday
         elif self.type == "수요예배":
-            image = setting.title_image_wednesday
-        result = gm.handle_file(file=new_file, image=image)
+            image_path = setting.title_image_wednesday
+        else:
+            messagebox.showinfo("알림", "주일/수요 예배가 아니어서 타이틀 이미지를 찾을 수 없습니다.")
+
+        result = gm.handle_file(vedio=new_file, image=image_path,type=self.type)
         if result:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
         self.on_delete()
@@ -316,7 +325,7 @@ class GUI:
         if not self.util.check_count_file(self.file_list, file_count):
             return None
         if file_size and not self.util.is_under_file_size(self.file_list[0], file_size):
-            messagebox.showinfo("알림", f"파일 크기가 {file_size}를 초과하였습니다.")
+            messagebox.showinfo("알림", "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하")
             return None
         self.save_info()
         file_name = self.util.check_info_and_get_name(
