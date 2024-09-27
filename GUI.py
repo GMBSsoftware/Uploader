@@ -5,6 +5,7 @@ from tkinterdnd2 import TkinterDnD, DND_FILES
 
 from Setting import Setting
 from Util import Util
+from File import File
 from Naver import Naver
 from Gm import Gm
 
@@ -133,7 +134,7 @@ class GUI:
             ("날짜", self.date.strftime("%Y-%m-%d")),
             ("예배 종류", self.type),
             ("주제", ""),
-            ("설교자(신급)", "주중심 목사"),
+            ("설교자(신급)", "주중심 목사" if self.type != "금요기도회" else ""),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
@@ -224,6 +225,15 @@ class GUI:
         setting.title_image_sunday = self.entry_widgets_setting[6].get()
         setting.title_image_wednesday = self.entry_widgets_setting[7].get()
 
+    def save_info(self):
+        """날짜, 타입, 주제, 설교자 등 정보를 저장하는 함수"""
+        self.date = datetime.datetime.strptime(
+            self.entry_widgets_home[0].get(), "%Y-%m-%d"
+        )
+        self.type = self.entry_widgets_home[1].get()
+        self.subject = self.entry_widgets_home[2].get()
+        self.name = self.entry_widgets_home[3].get()
+
     def clear_widgets(self):
         self.entry_widgets_setting.clear()
 
@@ -235,8 +245,20 @@ class GUI:
 
     def on_run(self):
         self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        for file in self.file_list:
-            print("file : ", file)  # File 객체의 __str__ 메서드 호출로 파일 정보 출력
+        if not self.util.check_count_file(self.file_list, 3):
+            return None
+        self.save_info()
+        file_name = self.util.check_info_and_get_name(
+            date=self.date,
+            type=self.type,
+            subject=self.subject,
+            name=self.name,
+            what=all,
+        )
+        if file_name is None:
+            return None
+        self.file_list = self.util.sort_files_by_size(self.file_list)
+        # 오름차순이래
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
@@ -244,60 +266,73 @@ class GUI:
         self.file_list.clear()
 
     def on_upload(self):
-        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        if not self.util.check_one_file(self.file_list):
+        new_file = self.preprocess(1, "gm", 1610666666)  # 1.5GB
+        if new_file is None:
             return
-        # 이름 정규화 해야된다. 정규화 이름을 handle_file메서드 안에서 실행해야되나...? 아님 또 변수로 넣어줘야되나?
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
-        result = gm.handle_file(file=self, image=setting.title_image_요일)
+        if self.type == "주일예배":
+            image = setting.title_image_sunday
+        elif self.type == "수요예배":
+            image = setting.title_image_wednesday
+        result = gm.handle_file(file=new_file, image=image)
         if result:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
         self.on_delete()
 
     def on_send_email(self):
-        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        if not self.util.check_one_file(self.file_list):
+        new_file = self.preprocess(1, "naver", 524288000)  # 500MB
+        if new_file is None:
             return
-        if not self.util.is_under_file_size(
-            self.file_list[0], 524288000
-        ):  # 500MB = 524288000B
-            messagebox.showinfo(
-                "알림", "파일 크기가 500MB를 초과하여 전송이 불가능합니다."
-            )
-            return
-        print("전송할 파일 : ", self.file_list[0])
         naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
         naver.login()
-        result = naver.handle_file(
-            file=str(self.file_list[0]), receiver=setting.receive_email
-        )
+        result = naver.handle_file(file=new_file, receiver=setting.receive_email)
         if result:
             messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
         self.on_delete()
 
     def on_file_move(self):
-        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        if not self.util.check_one_file(self.file_list):
+        new_file = self.preprocess(1, "nas", None)
+        if new_file is None:
             return
-
-        self.file_list[0].moveTo(
-            self.file_list[0],
+        self.util.moveTo(
+            new_file,
             os.path.join(
                 setting.nas_path, str(self.date.year), f"{self.date.month:02d}"
             ),
         )
-
-        if os.path.isfile(
-            os.path.join(
-                setting.nas_path,
-                str(self.date.year),
-                f"{self.date.month:02d}",
-                self.file_list[0].file_name,
-            )
-        ):
-            messagebox.showinfo("알림", "파일 이동을 완료했습니다.")
         self.on_delete()
+
+    def preprocess(self, file_count, what_button, file_size):
+        """각 버튼 눌렀을 때 처리 과정. 새 파일 리턴
+
+        file_count : 파일 개수가 몇 개여야하는지.
+        what_button : 어느 버튼을 누른것인지. (all, gm, nas, naver)
+        file_size : 초과하면 안 되는 파일 사이즈
+
+        파일 생성, 개수 체크, 크기 체크, 정보 저장, 정보 체크 및 이름, 파일명 체크, 이름 변경, File 형으로 생성
+        """
+        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
+        if not self.util.check_count_file(self.file_list, file_count):
+            return None
+        if file_size and not self.util.is_under_file_size(self.file_list[0], file_size):
+            messagebox.showinfo("알림", f"파일 크기가 {file_size}를 초과하였습니다.")
+            return None
+        self.save_info()
+        file_name = self.util.check_info_and_get_name(
+            date=self.date,
+            type=self.type,
+            subject=self.subject,
+            name=self.name,
+            what=what_button,
+        )
+        if file_name is None:
+            return None
+        new_file_path = self.util.rename(
+            self.file_list[0].file_path, self.file_list[0].file_name, file_name
+        )
+        new_file = File(new_file_path)
+        return new_file
 
 
 setting = Setting()

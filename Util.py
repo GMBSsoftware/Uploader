@@ -1,4 +1,4 @@
-import time, datetime, os
+import time, datetime, os, shutil
 import pyperclip
 from tkinter import messagebox
 from selenium.webdriver.common.by import By
@@ -96,11 +96,14 @@ class Util:
 
         return target_date, type
 
-    def check_one_file(self, file_list) -> bool:
+    def check_count_file(self, file_list, target_num) -> bool:
+        """파일이"""
         if isinstance(file_list, list):
-            if len(file_list) == 1:
+            if len(file_list) == target_num:
                 return True
-        messagebox.showinfo("알림", "파일이 없거나 여러개 입니다.")
+        messagebox.showinfo(
+            "알림", f"파일 개수가 맞지 않습니다. {target_num}개의 파일이 필요합니다."
+        )
         return False
 
     def is_under_file_size(self, file, target_file_size) -> bool:
@@ -111,8 +114,18 @@ class Util:
         messagebox.showinfo("알림", "파일 크기가 500MB를 초과하여 전송이 불가능합니다.")
         return False
 
-    def rename(self, old_name, new_name):
-        os.rename(old_name, new_name)
+    def rename(self, path, old_name, new_name):
+        # old_name에서 확장자 추출
+        _, extension = os.path.splitext(old_name)
+
+        # new_name에 확장자를 추가
+        new_name_with_extension = new_name + extension
+
+        # 파일 이름 변경
+        os.rename(
+            os.path.join(path, old_name), os.path.join(path, new_name_with_extension)
+        )
+        return os.path.join(path, new_name_with_extension)
 
     def create_new_folder(self, folder_path, folder_name_year, folder_name_month):
         """폴더 없을 때 생성"""
@@ -125,13 +138,13 @@ class Util:
         if not os.path.exists(full_path):
             os.makedirs(full_path, exist_ok=True)
 
-    def check_info(self, **kwargs):
-        """정보 체크하는 함수
-        date(날짜), type(예배 종류), subject(주제), name(설교자)
+    def check_info_and_get_name(self, **kwargs):
+        """정보 체크하고 이름 반환하는 함수
+        date(날짜), type(예배 종류), subject(주제), name(설교자), what(all, nas, gm, naver)
 
-        where => 어느 함수에서 호출했는지. 각 버튼 실행에 따라 검사해야하는 조건 상이
+        what => 어느 함수에서 호출했는지. 각 버튼 실행에 따라 검사해야하는 조건 상이
         """
-        valid_keys = {"date", "type", "subject", "name"}  # 허용되는 키 리스트
+        valid_keys = {"date", "type", "subject", "name", "what"}  # 허용되는 키 리스트
 
         for key in kwargs:
             if key not in valid_keys:
@@ -141,13 +154,85 @@ class Util:
         type = kwargs.get("type", None)
         subject = kwargs.get("subject", None)
         name = kwargs.get("name", None)
+        what = kwargs.get("what", None)
+
+        if not self.check_date_format(
+            str(date.date())
+        ):  # 시간 정보 빼고 날짜만 들어가게
+            return None
+
+        if what == "nas" or what == "all":
+            if type == "금요기도회":
+                if date == "" or type == "" or subject == "":
+                    messagebox.showinfo(
+                        "알림", "설교자를 제외한 모든 정보를 입력해주세요."
+                    )
+                    return
+            elif date == "" or type == "" or subject == "" or name == "":
+                messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
+                return
+            return date.strftime("%Y%m%d") + "_" + type + "_" + subject + "_" + name
+        elif what == "gm":
+            if date == "":
+                messagebox.showinfo("알림", "날짜 정보를 입력해주세요")
+                return
+            return date.strftime("%Y년 %m월 %d일")
+        elif what == "naver":
+            if date == "" or type == "" or name == "":
+                messagebox.showinfo("알림", "주제를 제외한 기타 정보를 입력해주세요")
+                return
+            return date.strftime("%y%m%d") + "_" + type + "_서울광명_" + name
+
+        return None
+
+    def check_date_format(self, date):
+        try:
+            datetime.datetime.strptime(date, "%Y-%m-%d")
+            return True
+        except ValueError:
+            messagebox.showinfo(
+                "알림", "올바른 날짜를 입력해주세요. 날짜 형식 YYYY-mm-dd"
+            )
+            return False
 
     def create_files(self, file_paths):
         """파일 경로 리스트를 받아서 File 객체로 만들어 file list로 반환"""
         result = []
         for file_path in file_paths:
-            file_name = os.path.basename(file_path)
-            file_path = os.path.dirname(file_path)
-            file_obj = File(file_name, file_path)
+            file_obj = File(file_path)
             result.append(file_obj)
         return result
+
+    def moveTo(self, file, path_to_move):
+        if isinstance(file, File):
+            if os.path.isfile(file.full_path):
+                try:
+                    shutil.move(
+                        file.full_path, os.path.join(path_to_move, file.file_name)
+                    )
+                    messagebox.showinfo("알림", "파일이 이동되었습니다.")
+                except FileNotFoundError as e:
+                    messagebox.showinfo("알림", "파일을 찾을 수 없습니다")
+                except Exception as e:
+                    messagebox.showinfo("알림", "예상치 못한 오류 발생")
+            else:
+                messagebox.showinfo("알림", "파일이 존재하지 않습니다")
+        else:
+            messagebox.showinfo("알림", "파일 관련 오류 발생")
+
+    def sort_files_by_size(file_list, reverse=False):
+        """
+        파일 리스트를 파일 크기 기준으로 정렬하는 함수.
+
+        Args:
+            file_list (list): File 객체를 포함하는 리스트.
+            reverse (bool): True면 내림차순, False면 오름차순으로 정렬. 기본값은 False.
+
+        Returns:
+            list: 정렬된 File 객체 리스트.
+        """
+        # file_list가 File 인스턴스들로 구성되어 있는지 확인
+        if all(isinstance(file, File) for file in file_list):
+            return sorted(file_list, key=lambda x: x.file_size, reverse=reverse)
+        else:
+            raise TypeError("file_list 내의 모든 요소는 File 객체여야 합니다.")

@@ -51,7 +51,7 @@ class Naver(Website):
 
         self.util.click('//*[@id="recipient_input_element"]')  # 받는 사람 선택
         self.util.input_text(receiver)  # 받는 사람 입력하기
-        self.util.send_key("ATTACH_LOCAL_FILE_ELEMENT_ID", file)  # 파일 첨부
+        self.util.send_key("ATTACH_LOCAL_FILE_ELEMENT_ID", str(file))  # 파일 첨부
         # 뭔가 파일 로딩 될 때까지 기다려야되나?
         self.util.wait_and_click(
             '//*[@id="content"]/div[2]/div[1]/div/button[1]'
