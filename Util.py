@@ -135,52 +135,51 @@ class Util:
         if not os.path.exists(full_path):
             os.makedirs(full_path, exist_ok=True)
 
-    def check_info_and_get_name(self, **kwargs):
-        """정보 체크하고 이름 반환하는 함수
-        date(날짜), type(예배 종류), subject(주제), name(설교자), what(all, nas, gm, naver)
+    def check_info(self, info,what_button):
+        """정보 체크하는 함수
 
         what => 어느 함수에서 호출했는지. 각 버튼 실행에 따라 검사해야하는 조건 상이
         """
-        valid_keys = {"date", "type", "subject", "name", "what"}  # 허용되는 키 리스트
-
-        for key in kwargs:
-            if key not in valid_keys:
-                raise ValueError(f"Invalid key: {key}")
-
-        date = kwargs.get("date", None)
-        type = kwargs.get("type", None)
-        subject = kwargs.get("subject", None)
-        name = kwargs.get("name", None)
-        what = kwargs.get("what", None)
 
         if not self.check_date_format(
-            str(date.date())
+            str(info.date.date())
         ):  # 시간 정보 빼고 날짜만 들어가게
-            return None
+            return False
 
-        if what == "nas" or what == "all":
-            if type == "금요기도회":
-                if date == "" or type == "" or subject == "":
+        if what_button == "nas" or what_button == "all":
+            if info.type == "금요기도회":
+                if info.date == "" or info.type == "" or info.subject == "":
                     messagebox.showinfo(
                         "알림", "설교자를 제외한 모든 정보를 입력해주세요."
                     )
-                    return
-            elif date == "" or type == "" or subject == "" or name == "":
+                    return False
+            elif info.date == "" or info.type == "" or info.subject == "" or info.name == "":
                 messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
-                return
-            return date.strftime("%Y%m%d") + "_" + type + "_" + subject + "_" + name
-        elif what == "gm":
-            if date == "":
+                return False
+        elif what_button == "gm":
+            if info.date == "":
                 messagebox.showinfo("알림", "날짜 정보를 입력해주세요")
-                return
-            return date.strftime("%Y년 %m월 %d일")
-        elif what == "naver":
-            if date == "" or type == "" or name == "":
+                return False
+        elif what_button == "naver":
+            if info.date == "" or info.type == "" or info.name == "":
                 messagebox.showinfo("알림", "주제를 제외한 기타 정보를 입력해주세요")
-                return
-            return date.strftime("%y%m%d") + "_" + type + "_서울광명_" + name
-
-        return None
+                return False
+        
+        return True
+    
+    def get_name(self,info,what_button):
+        name_gm,name_nas,name_naver=None,None,None
+        if what_button=="all":
+            name_gm=info.date.strftime("%Y년 %m월 %d일")
+            name_nas=info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
+            name_naver=info.date.strftime("%y%m%d") + "_" + info.type + "_서울광명_" + info.name
+        elif what_button=="gm":
+            name_gm=info.date.strftime("%Y년 %m월 %d일")
+        elif what_button=="nas":
+            name_nas= info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
+        elif what_button=="naver":
+            name_naver=info.date.strftime("%y%m%d") + "_" + info.type + "_서울광명_" + info.name
+        return name_gm,name_nas,name_naver
 
     def check_date_format(self, date):
         try:

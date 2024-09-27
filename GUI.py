@@ -4,6 +4,7 @@ from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
 from Setting import Setting
+from Info import Info
 from Util import Util
 from File import File
 from Naver import Naver
@@ -22,11 +23,17 @@ class GUI:
         self.file_list = []
         self.util = Util()
         self.util.create_new_folder(
-            setting.nas_path,
+            setting.nas_path_service,
             datetime.datetime.now().year,
             datetime.datetime.now().month,
         )
-        self.date, self.type = self.util.get_date_and_type()
+        self.util.create_new_folder(
+            setting.nas_path_pray,
+            datetime.datetime.now().year,
+            datetime.datetime.now().month,
+        )
+        self.info=Info()
+        self.info.date, self.info.type = self.util.get_date_and_type()
         self.entry_widgets_setting = []  # 엔트리 위젯(설정 값)을 저장할 리스트 추가
         self.entry_widgets_home = (
             []
@@ -115,11 +122,6 @@ class GUI:
 
     def on_home_click(self):
         self.save_settings()
-        self.util.create_new_folder(
-            setting.nas_path,
-            datetime.datetime.now().year,
-            datetime.datetime.now().month,
-        )
         self.page_home()
 
     def on_setting_click(self):
@@ -131,10 +133,10 @@ class GUI:
     def frame_drag_and_drop(self):
         # 엔트리 위젯 추가를 위한 데이터
         entries = [
-            ("날짜", self.date.strftime("%Y-%m-%d")),
-            ("예배 종류", self.type),
+            ("날짜", self.info.date.strftime("%Y-%m-%d")),
+            ("예배 종류", self.info.type),
             ("주제", ""),
-            ("설교자(신급)", "주중심 목사" if self.type != "금요기도회" else ""),
+            ("설교자(신급)", "주중심 목사" if self.info.type != "금요기도회" else ""),
         ]
 
         for i, (label_text, default_value) in enumerate(entries):
@@ -198,7 +200,8 @@ class GUI:
             ("네이버 아이디", setting.id_naver),
             ("네이버 비밀번호", setting.password_naver),
             ("메일 받는 사람", setting.receive_email),
-            ("저장할 나스 위치", setting.nas_path),
+            ("예배 파일 나스 위치", setting.nas_path_service),
+            ("기도회 파일 나스 위치", setting.nas_path_pray),
             ("주일 타이틀 이미지", setting.title_image_sunday),
             ("수요 타이틀 이미지", setting.title_image_wednesday),
         ]
@@ -221,18 +224,22 @@ class GUI:
         setting.id_naver = self.entry_widgets_setting[2].get()
         setting.password_naver = self.entry_widgets_setting[3].get()
         setting.receive_email = self.entry_widgets_setting[4].get()
-        setting.nas_path = self.entry_widgets_setting[5].get()
-        setting.title_image_sunday = self.entry_widgets_setting[6].get()
-        setting.title_image_wednesday = self.entry_widgets_setting[7].get()
+        setting.nas_path_service = self.entry_widgets_setting[5].get()
+        setting.nas_path_pray = self.entry_widgets_setting[6].get()
+        setting.title_image_sunday = self.entry_widgets_setting[7].get()
+        setting.title_image_wednesday = self.entry_widgets_setting[8].get()
 
-    def save_info(self):
+    def save_info(self,what_button):
         """날짜, 타입, 주제, 설교자 등 정보를 저장하는 함수"""
-        self.date = datetime.datetime.strptime(
+        self.info.date = datetime.datetime.strptime(
             self.entry_widgets_home[0].get(), "%Y-%m-%d"
         )
-        self.type = self.entry_widgets_home[1].get()
-        self.subject = self.entry_widgets_home[2].get()
-        self.name = self.entry_widgets_home[3].get()
+        self.info.type = self.entry_widgets_home[1].get()
+        self.info.subject = self.entry_widgets_home[2].get()
+        self.info.name = self.entry_widgets_home[3].get()
+
+        if not self.util.check_info(self.info,what_button):
+            return
 
     def clear_widgets(self):
         self.entry_widgets_setting.clear()
@@ -244,53 +251,43 @@ class GUI:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
     def on_run(self):
-        self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        if not self.util.check_count_file(self.file_list, 3):
-            return None
-        self.save_info()
-        file_name = self.util.check_info_and_get_name(
-            date=self.date,
-            type=self.type,
-            subject=self.subject,
-            name=self.name,
-            what="all",
-        )
-        if file_name is None:
-            return None
-        self.file_list = self.util.sort_files_by_size(self.file_list)
-
-        # 제일 작은 파일부터 처리
-        for action, file_size in [("on_send_email", 524288000), ("on_upload", 1610666666), ("on_file_move", None)]:
-            new_file = self.preprocess(1, action.lower(), file_size)
-            if new_file is not None:
-                getattr(self, action)()  # 메서드 호출
+        gm,nas,naver=self.preprocess("all")
+        self.on_send_email(naver)
+        self.on_upload(gm)
+        self.on_file_move(nas)
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
         self.listbox.delete(0, tk.END)  # 리스트박스의 모든 항목 삭제
         self.file_list.clear()
 
-    def on_upload(self):
-        new_file = self.preprocess(1, "gm", 1610666666)  # 1.5GB
+    def on_upload(self,file=None):
+        if file:
+            new_file=file
+        else:
+            new_file = self.preprocess("gm")
         if new_file is None:
             return
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
 
-        if self.type == "주일예배":
+        if self.info.type == "주일예배":
             image_path = setting.title_image_sunday
-        elif self.type == "수요예배":
+        elif self.info.type == "수요예배":
             image_path = setting.title_image_wednesday
         else:
             messagebox.showinfo("알림", "주일/수요 예배가 아니어서 타이틀 이미지를 찾을 수 없습니다.")
 
-        result = gm.handle_file(vedio=new_file, image=image_path,type=self.type)
+        result = gm.handle_file(vedio=new_file, image=image_path,type=self.info.type)
         if result:
             messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
         self.on_delete()
 
-    def on_send_email(self):
-        new_file = self.preprocess(1, "naver", 524288000)  # 500MB
+    def on_send_email(self,file=None):
+        if file:
+            new_file=file
+        else:
+            new_file = self.preprocess("naver")
         if new_file is None:
             return
         naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
@@ -300,49 +297,101 @@ class GUI:
             messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
         self.on_delete()
 
-    def on_file_move(self):
-        new_file = self.preprocess(1, "nas", None)
+    def on_file_move(self,file=None):
+        if file:
+            new_file=file
+        else:
+            new_file = self.preprocess("nas")
         if new_file is None:
             return
+        nas_path=setting.nas_path_service if not self.info.type=="금요기도회" else setting.nas_path_pray
         self.util.moveTo(
             new_file,
             os.path.join(
-                setting.nas_path, str(self.date.year), f"{self.date.month:02d}"
+                nas_path, str(self.info.date.year), f"{self.info.date.month:02d}"
             ),
         )
         self.on_delete()
 
-    def preprocess(self, file_count, what_button, file_size):
+    def preprocess(self, what_button):
         """각 버튼 눌렀을 때 처리 과정. 새 파일 리턴
 
-        file_count : 파일 개수가 몇 개여야하는지.
         what_button : 어느 버튼을 누른것인지. (all, gm, nas, naver)
-        file_size : 초과하면 안 되는 파일 사이즈
 
         파일 생성, 개수 체크, 크기 체크, 정보 저장, 정보 체크 및 이름, 파일명 체크, 이름 변경, File 형으로 생성
         """
         self.file_list = self.util.create_files(self.listbox.get(0, tk.END))
-        if not self.util.check_count_file(self.file_list, file_count):
+        file_count=1
+        
+        if what_button=="all":
+            file_count=3
+            self.file_list = self.util.sort_files_by_size(self.file_list)
+            if not self.util.check_count_file(self.file_list, file_count):
+                return None
+            self.save_info(what_button)
+            file_names=self.util.get_name(self.info,what_button)
+            if all(x is None for x in file_names):
+                return None
+            
+            # file_list는 작은 순으로 정렬. 메일, 홈페이지, 나스
+            # file_name은 이름 순으로 정렬. gm, nas, naver
+            new_file_path_gm = self.util.rename(
+                self.file_list[1].file_path, self.file_list[1].file_name, file_names[0]
+            )
+            new_file_gm = File(new_file_path_gm)
+            new_file_path_nas = self.util.rename(
+                self.file_list[2].file_path, self.file_list[2].file_name, file_names[1]
+            )
+            new_file_nas = File(new_file_path_nas)
+            new_file_path_naver = self.util.rename(
+                self.file_list[0].file_path, self.file_list[0].file_name, file_names[2]
+            )
+            new_file_naver = File(new_file_path_naver)
+            return new_file_gm,new_file_nas,new_file_naver
+        elif what_button=="gm":
+            if not self.util.is_under_file_size(self.file_list[0], 524288000):  # 500MB
+                messagebox.showinfo("알림", "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하")
+                return None
+            if not self.util.check_count_file(self.file_list, file_count):
+                return None
+            self.save_info(what_button)
+            file_names=self.util.get_name(self.info,what_button)
+            if all(x is None for x in file_names):
+                return None
+            new_file_path = self.util.rename(
+                self.file_list[0].file_path, self.file_list[0].file_name, file_names[0]
+            )
+            new_file = File(new_file_path)
+            return new_file
+        elif what_button=="nas":
+            if not self.util.check_count_file(self.file_list, file_count):
+                return None
+            self.save_info(what_button)
+            file_names=self.util.get_name(self.info,what_button)
+            if all(x is None for x in file_names):
+                return None
+            new_file_path = self.util.rename(
+                self.file_list[0].file_path, self.file_list[0].file_name, file_names[1]
+            )
+            new_file = File(new_file_path)
+            return new_file
+        elif what_button=="naver":
+            if not self.util.is_under_file_size(self.file_list[0], 1610666666):  # 1.5GB
+                messagebox.showinfo("알림", "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하")
+                return None
+            if not self.util.check_count_file(self.file_list, file_count):
+                return None
+            self.save_info(what_button)
+            file_names=self.util.get_name(self.info,what_button)
+            if all(x is None for x in file_names):
+                return None
+            new_file_path = self.util.rename(
+                self.file_list[0].file_path, self.file_list[0].file_name, file_names[2]
+            )
+            new_file = File(new_file_path)
+            return new_file
+        else:
             return None
-        if file_size and not self.util.is_under_file_size(self.file_list[0], file_size):
-            messagebox.showinfo("알림", "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하")
-            return None
-        self.save_info()
-        file_name = self.util.check_info_and_get_name(
-            date=self.date,
-            type=self.type,
-            subject=self.subject,
-            name=self.name,
-            what=what_button,
-        )
-        if file_name is None:
-            return None
-        new_file_path = self.util.rename(
-            self.file_list[0].file_path, self.file_list[0].file_name, file_name
-        )
-        new_file = File(new_file_path)
-        return new_file
-
 
 setting = Setting()
 if __name__ == "__main__":
