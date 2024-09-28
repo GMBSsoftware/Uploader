@@ -160,7 +160,7 @@ class GUI:
 
         # 실행 버튼
         self.run_button = tk.Button(
-            self.root, text="실행", command=self.on_run, relief="groove"
+            self.root, text="실행", command=lambda:self.on_run("all"), relief="groove"
         )
         self.run_button.place(x=520, y=150, width=70, height=70)
 
@@ -172,19 +172,19 @@ class GUI:
 
         # 홈페이지 업로드 버튼
         self.upload_button = tk.Button(
-            self.root, text="홈페이지\n업로드", command=self.on_upload, relief="groove"
+            self.root, text="홈페이지\n업로드", command=lambda:self.on_run("gm"), relief="groove"
         )
         self.upload_button.place(x=120, y=330, width=50, height=50)
 
         # 메일 전송 버튼
         self.send_email_button = tk.Button(
-            self.root, text="메일\n전송", command=self.on_send_email, relief="groove"
+            self.root, text="메일\n전송", command=lambda:self.on_run("naver"), relief="groove"
         )
         self.send_email_button.place(x=220, y=330, width=50, height=50)
 
         # 나스 이동 버튼
         self.file_move_button = tk.Button(
-            self.root, text="나스\n이동", command=self.on_file_move, relief="groove"
+            self.root, text="나스\n이동", command=lambda:self.on_run("nas"), relief="groove"
         )
         self.file_move_button.place(x=320, y=330, width=50, height=50)
 
@@ -250,13 +250,32 @@ class GUI:
         for file in files:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
-    def on_run(self):
-        gm, nas, naver = self.preprocess("all")
+    def on_run(self,type):
+        if type=="all":
+            gm, nas, naver = self.preprocess("all")
+            result=False
+        elif type=="gm":
+            new_file = self.preprocess("gm")
+            result=self.upload(new_file)
+            message="광명 홈페이지에 업로드를 완료했습니다."
+        elif type=="nas":
+            new_file = self.preprocess("nas")
+            result=self.file_move(new_file)
+            message="나스에 파일 이동을 완료했습니다."
+        elif type=="naver":
+            new_file = self.preprocess("naver")
+            result=self.send_email(new_file)
+            message="메일 전송을 완료했습니다."
+        
+        if result:
+            messagebox.showinfo("알림", message)
+            self.on_delete()
+            return
 
         # 스레드 생성
-        thread_email = threading.Thread(target=self.on_send_email, args=(naver,))
-        thread_upload = threading.Thread(target=self.on_upload, args=(gm,))
-        thread_move = threading.Thread(target=self.on_file_move, args=(nas,))
+        thread_email = threading.Thread(target=self.send_email, args=(naver,))
+        thread_upload = threading.Thread(target=self.upload, args=(gm,))
+        thread_move = threading.Thread(target=self.file_move, args=(nas,))
         
         # 스레드 실행
         thread_email.start()
@@ -268,20 +287,16 @@ class GUI:
         thread_upload.join()
         thread_move.join()
 
-        print("모든 작업이 완료되었습니다.")
+        print("모든 작업이 완료했습니다.")
+        messagebox.showinfo("알림", "모든 작업이 완료했습니다.")
+        self.on_delete()
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
         self.listbox.delete(0, tk.END)  # 리스트박스의 모든 항목 삭제
         self.file_list.clear()
 
-    def on_upload(self,file=None):
-        if file:
-            new_file=file
-        else:
-            new_file = self.preprocess("gm")
-        if new_file is None:
-            return
+    def upload(self,file=None):
         gm = Gm(setting.address_gm, setting.id_gm, setting.password_gm)
         gm.login()
 
@@ -292,43 +307,32 @@ class GUI:
         else:
             messagebox.showinfo("알림", "주일/수요 예배가 아니어서 타이틀 이미지를 찾을 수 없습니다.")
 
-        result = gm.handle_file(vedio=new_file, image=image_path,info=self.info)
-        #if result:
-            #messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
-        self.on_delete()
-        print('debug upload')
+        result = gm.handle_file(vedio=file, image=image_path,info=self.info)
+        return result
 
-    def on_send_email(self,file=None):
-        if file:
-            new_file=file
-        else:
-            new_file = self.preprocess("naver")
-        if new_file is None:
-            return
+    def send_email(self,file=None):
         naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
         naver.login()
-        result = naver.handle_file(file=new_file, receiver=setting.receive_email)
-        #if result:
-            #messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
-        self.on_delete()
-        print('debug email')
+        result = naver.handle_file(file=file, receiver=setting.receive_email)
+        return result
 
-    def on_file_move(self,file=None):
-        if file:
-            new_file=file
-        else:
-            new_file = self.preprocess("nas")
-        if new_file is None:
-            return
-        nas_path=setting.nas_path_service if not self.info.type=="금요기도회" else setting.nas_path_pray
-        self.util.moveTo(
-            new_file,
-            os.path.join(
-                nas_path, str(self.info.date.year), f"{self.info.date.month:02d}"
-            ),
+    def file_move(self,file=None):
+        # 파일 이동 경로 설정
+        nas_path = setting.nas_path_service if not self.info.type == "금요기도회" else setting.nas_path_pray
+        destination_path = os.path.join(
+            nas_path, str(self.info.date.year), f"{self.info.date.month:02d}"
         )
-        self.on_delete()
-        print('debug file')
+        
+        # 파일 이동
+        self.util.moveTo(file, destination_path)
+
+        # 파일 이동 후 존재 여부 확인
+        if os.path.exists(os.path.join(destination_path,file.file_name)):
+            print(f"파일이 성공적으로 이동되었습니다.")
+            return True
+        else:
+            print("파일 이동 실패 또는 파일을 찾을 수 없습니다.")
+            return False
 
     def preprocess(self, what_button):
         """각 버튼 눌렀을 때 처리 과정. 새 파일 리턴
@@ -346,7 +350,7 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
             self.save_info(what_button)
-            file_names=self.util.get_name(self.info,what_button)
+            file_names=self.util.get_names(self.info,what_button)
             if all(x is None for x in file_names):
                 return None
             
@@ -372,7 +376,7 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
             self.save_info(what_button)
-            file_names=self.util.get_name(self.info,what_button)
+            file_names=self.util.get_names(self.info,what_button)
             if all(x is None for x in file_names):
                 return None
             new_file_path = self.util.rename(
@@ -384,7 +388,7 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
             self.save_info(what_button)
-            file_names=self.util.get_name(self.info,what_button)
+            file_names=self.util.get_names(self.info,what_button)
             if all(x is None for x in file_names):
                 return None
             new_file_path = self.util.rename(
@@ -399,7 +403,7 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
             self.save_info(what_button)
-            file_names=self.util.get_name(self.info,what_button)
+            file_names=self.util.get_names(self.info,what_button)
             if all(x is None for x in file_names):
                 return None
             new_file_path = self.util.rename(

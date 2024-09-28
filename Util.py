@@ -167,7 +167,7 @@ class Util:
         
         return True
     
-    def get_name(self,info,what_button):
+    def get_names(self,info,what_button):
         name_gm,name_nas,name_naver=None,None,None
         if what_button=="all":
             name_gm=info.date.strftime("%Y년 %m월 %d일")
