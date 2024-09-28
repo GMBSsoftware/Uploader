@@ -16,7 +16,7 @@ class Gm(Website):
         """파일 업로드
         vedio, image 변수
         """
-        valid_keys = {"vedio", "image","type"}  # 허용되는 키 리스트
+        valid_keys = {"vedio", "image","info"}  # 허용되는 키 리스트
 
         for key in kwargs:
             if key not in valid_keys:
@@ -24,7 +24,7 @@ class Gm(Website):
 
         vedio = kwargs.get("vedio", None)  # 키 'vedio'가 없으면 기본값 None
         image = kwargs.get("image", None)  # 키 'image'가 없으면 기본값 None
-        type = kwargs.get("type", None)  # 키 'type'가 없으면 기본값 None
+        info = kwargs.get("info", None)  # 키 'info'가 없으면 기본값 None
 
         self.util.wait_and_click('/html/body/div[1]/div[1]/div/header/div[2]/a')    # 메뉴바 열기
         self.util.wait_and_click(
@@ -33,19 +33,24 @@ class Gm(Website):
         self.util.wait_and_click('//*[@id="vueapp"]/div[1]/button[1]')  # 추가 버튼
         # self.util.click('//*[@id="menu_idx"]')                      # 메뉴 선택 버튼
         
-        if type=="주일예배":
+        if info.type=="주일예배":
             self.util.wait_and_click('//*[@id="menu_idx"]/option[2]')  # 주일 예배 선택
-        elif type=="수요예배":
+        elif info.type=="수요예배":
             self.util.wait_and_click('//*[@id="menu_idx"]/option[3]')  # 수요 예배 선택
         self.util.click("subject")  # 제목 입력 클릭
 
         title, extension = os.path.splitext(vedio.file_name)
         self.util.input_text(title)  # 입력하기
+
         self.util.click(
             '//*[@id="vueapp"]/div/div/div/form/div[3]/div/div[2]/label/input'
         )  # 영상 종류 mp4
         self.util.send_key("video_value", str(vedio))  # mp4 파일
         self.util.send_key("img_file", str(image))  # 이미지 파일
+
+        self.util.click("title")  # 말씀 주제 클릭
+        self.util.input_text(info.subject)  # 입력하기
+
         self.util.click(
             '//*[@id="vueapp"]/div/div/div/form/div[10]/div/button[1]'
         )  # 저장 버튼

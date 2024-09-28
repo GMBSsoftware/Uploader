@@ -1,5 +1,5 @@
 import tkinter as tk
-import os, datetime
+import os, datetime, threading
 from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
@@ -251,10 +251,24 @@ class GUI:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
     def on_run(self):
-        gm,nas,naver=self.preprocess("all")
-        self.on_send_email(naver)
-        self.on_upload(gm)
-        self.on_file_move(nas)
+        gm, nas, naver = self.preprocess("all")
+
+        # 스레드 생성
+        thread_email = threading.Thread(target=self.on_send_email, args=(naver,))
+        thread_upload = threading.Thread(target=self.on_upload, args=(gm,))
+        thread_move = threading.Thread(target=self.on_file_move, args=(nas,))
+        
+        # 스레드 실행
+        thread_email.start()
+        thread_upload.start()
+        thread_move.start()
+
+        # 모든 스레드가 끝날 때까지 대기
+        thread_email.join()
+        thread_upload.join()
+        thread_move.join()
+
+        print("모든 작업이 완료되었습니다.")
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""
@@ -278,10 +292,11 @@ class GUI:
         else:
             messagebox.showinfo("알림", "주일/수요 예배가 아니어서 타이틀 이미지를 찾을 수 없습니다.")
 
-        result = gm.handle_file(vedio=new_file, image=image_path,type=self.info.type)
-        if result:
-            messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
+        result = gm.handle_file(vedio=new_file, image=image_path,info=self.info)
+        #if result:
+            #messagebox.showinfo("알림", "광명 홈페이지에 업로드를 완료했습니다.")
         self.on_delete()
+        print('debug upload')
 
     def on_send_email(self,file=None):
         if file:
@@ -293,9 +308,10 @@ class GUI:
         naver = Naver(setting.address_naver, setting.id_naver, setting.password_naver)
         naver.login()
         result = naver.handle_file(file=new_file, receiver=setting.receive_email)
-        if result:
-            messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
+        #if result:
+            #messagebox.showinfo("알림", "메일 전송을 완료했습니다.")
         self.on_delete()
+        print('debug email')
 
     def on_file_move(self,file=None):
         if file:
@@ -312,6 +328,7 @@ class GUI:
             ),
         )
         self.on_delete()
+        print('debug file')
 
     def preprocess(self, what_button):
         """각 버튼 눌렀을 때 처리 과정. 새 파일 리턴

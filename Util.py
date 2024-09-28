@@ -157,12 +157,12 @@ class Util:
                 messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
                 return False
         elif what_button == "gm":
-            if info.date == "":
-                messagebox.showinfo("알림", "날짜 정보를 입력해주세요")
+            if info.date == "" or info.type==""or info.subject=="":
+                messagebox.showinfo("알림", "설교자를 제외한 모든 정보를 입력해주세요.")
                 return False
         elif what_button == "naver":
             if info.date == "" or info.type == "" or info.name == "":
-                messagebox.showinfo("알림", "주제를 제외한 기타 정보를 입력해주세요")
+                messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
                 return False
         
         return True
@@ -206,15 +206,17 @@ class Util:
                     shutil.move(
                         file.full_path, os.path.join(path_to_move, file.file_name)
                     )
-                    messagebox.showinfo("알림", "파일이 이동되었습니다.")
+                    # messagebox.showinfo("알림", "파일이 이동되었습니다.")
                 except FileNotFoundError as e:
-                    messagebox.showinfo("알림", "파일을 찾을 수 없습니다")
+                    pass
+                    # messagebox.showinfo("알림", "파일을 찾을 수 없습니다")
                 except Exception as e:
-                    messagebox.showinfo("알림", "예상치 못한 오류 발생")
-            else:
+                    pass
+                    # messagebox.showinfo("알림", "예상치 못한 오류 발생")
+            """else:
                 messagebox.showinfo("알림", "파일이 존재하지 않습니다")
         else:
-            messagebox.showinfo("알림", "파일 관련 오류 발생")
+            messagebox.showinfo("알림", "파일 관련 오류 발생")"""
 
     def sort_files_by_size(self,file_list, reverse=False):
         """
