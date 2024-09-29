@@ -250,46 +250,41 @@ class GUI:
         for file in files:
             self.listbox.insert(tk.END, file)  # 드롭된 파일 경로 추가
 
-    def on_run(self,type):
-        if type=="all":
+    def on_run(self, type):
+        if type == "all":
             gm, nas, naver = self.preprocess("all")
-            result=False
-        elif type=="gm":
+            result = False
+        elif type == "gm":
             new_file = self.preprocess("gm")
-            result=self.upload(new_file)
-            message="광명 홈페이지에 업로드를 완료했습니다."
-        elif type=="nas":
+            result = self.upload(new_file)
+            message = "광명 홈페이지에 업로드를 완료했습니다."
+        elif type == "nas":
             new_file = self.preprocess("nas")
-            result=self.file_move(new_file)
-            message="나스에 파일 이동을 완료했습니다."
-        elif type=="naver":
+            result = self.file_move(new_file)
+            message = "나스에 파일 이동을 완료했습니다."
+        elif type == "naver":
             new_file = self.preprocess("naver")
-            result=self.send_email(new_file)
-            message="메일 전송을 완료했습니다."
+            result = self.send_email(new_file)
+            message = "메일 전송을 완료했습니다."
         
+        # 작업이 성공적으로 완료된 경우 메시지 박스를 표시
         if result:
             messagebox.showinfo("알림", message)
             self.on_delete()
             return
 
-        # 스레드 생성
-        thread_email = threading.Thread(target=self.send_email, args=(naver,))
-        thread_upload = threading.Thread(target=self.upload, args=(gm,))
-        thread_move = threading.Thread(target=self.file_move, args=(nas,))
-        
-        # 스레드 실행
-        thread_email.start()
-        thread_upload.start()
-        thread_move.start()
-
-        # 모든 스레드가 끝날 때까지 대기
-        thread_email.join()
-        thread_upload.join()
-        thread_move.join()
+        # 스레드를 사용하지 않고 순차적으로 각 작업 실행
+        if naver:
+            self.send_email(naver)
+        if gm:
+            self.upload(gm)
+        if nas:
+            self.file_move(nas)
 
         print("모든 작업이 완료했습니다.")
         messagebox.showinfo("알림", "모든 작업이 완료했습니다.")
         self.on_delete()
+
 
     def on_delete(self):
         """리스트박스의 모든 항목을 지우는 함수"""

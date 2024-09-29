@@ -170,11 +170,11 @@ class Util:
     def get_names(self,info,what_button):
         name_gm,name_nas,name_naver=None,None,None
         if what_button=="all":
-            name_gm=info.date.strftime("%Y년 %m월 %d일")
+            name_gm=info.date.strftime("%Y년 %m월 %d일".encode('unicode-escape').decode()).encode().decode('unicode-escape')
             name_nas=info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
             name_naver=info.date.strftime("%y%m%d") + "_" + info.type + "_서울광명_" + info.name
         elif what_button=="gm":
-            name_gm=info.date.strftime("%Y년 %m월 %d일")
+            name_gm=info.date.strftime("%Y년 %m월 %d일".encode('unicode-escape').decode()).encode().decode('unicode-escape')
         elif what_button=="nas":
             name_nas= info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
         elif what_button=="naver":
