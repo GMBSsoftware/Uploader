@@ -1,6 +1,7 @@
 from Website import Website
 import os
 
+
 class Gm(Website):
     def __init__(self, address, id, password) -> None:
         super().__init__(address, id, password)
@@ -16,7 +17,7 @@ class Gm(Website):
         """파일 업로드
         vedio, image 변수
         """
-        valid_keys = {"vedio", "image","info"}  # 허용되는 키 리스트
+        valid_keys = {"vedio", "image", "info"}  # 허용되는 키 리스트
 
         for key in kwargs:
             if key not in valid_keys:
@@ -26,21 +27,23 @@ class Gm(Website):
         image = kwargs.get("image", None)  # 키 'image'가 없으면 기본값 None
         info = kwargs.get("info", None)  # 키 'info'가 없으면 기본값 None
 
-        self.util.wait_and_click('/html/body/div[1]/div[1]/div/header/div[2]/a')    # 메뉴바 열기
+        self.util.wait_and_click(
+            "/html/body/div[1]/div[1]/div/header/div[2]/a"
+        )  # 메뉴바 열기
         self.util.wait_and_click(
             '//*[@id="main-menu"]/li[2]/ul/li[3]/a/span'
         )  # 컨텐츠 관리 버튼
         self.util.wait_and_click('//*[@id="vueapp"]/div[1]/button[1]')  # 추가 버튼
         # self.util.click('//*[@id="menu_idx"]')                      # 메뉴 선택 버튼
-        
-        if info.type=="주일예배":
+
+        if info.type == "주일예배":
             self.util.wait_and_click('//*[@id="menu_idx"]/option[2]')  # 주일 예배 선택
-        elif info.type=="수요예배":
+        elif info.type == "수요예배":
             self.util.wait_and_click('//*[@id="menu_idx"]/option[3]')  # 수요 예배 선택
         self.util.click("subject")  # 제목 입력 클릭
 
         title, extension = os.path.splitext(vedio.file_name)
-        self.util.input_text(title)  # 입력하기
+        self.util.input_text(title + " " + info.type)  # 입력하기
 
         self.util.click(
             '//*[@id="vueapp"]/div/div/div/form/div[3]/div/div[2]/label/input'
@@ -61,13 +64,13 @@ class Gm(Website):
         # alert 확인 (확인 버튼 클릭)
         alert.accept()
 
-        result=self.util.wait_for_element(
+        result = self.util.wait_for_element(
             '//*[@id="btn_delete"]'
         )  # 삭제 버튼 나오면 정상 업로드 완료.
-        
+
         self.driver.close()
 
-        if result!=False:
+        if result != False:
             return True
         else:
             return False

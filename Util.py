@@ -1,5 +1,5 @@
-import time, datetime, os, shutil
-import pyperclip
+import time, datetime, os, shutil, ctypes, pyperclip
+from ctypes import wintypes
 from tkinter import messagebox
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains, Keys
@@ -102,7 +102,9 @@ class Util:
             if len(file_list) == target_num:
                 return True
         messagebox.showinfo(
-            "알림", f"파일 개수가 맞지 않습니다. {target_num}개의 파일이 필요합니다.\n\n실행 버튼 : 3개 파일.\n\n(파일 크기 작은 순) 1. 메일 전송 2. 홈페이지 업로드 3. 나스 이동\n\n하단 개별 기능 버튼 : 1개 파일.")
+            "알림",
+            f"{target_num}개의 파일만 넣어주세요.\n\n실행 버튼 : (파일 크기 작은 순) 1. 메일 전송 2. 홈페이지 업로드 3. 나스 이동\n\n하단 개별 기능 버튼 : 1개 파일.",
+        )
         return False
 
     def is_under_file_size(self, file, target_file_size) -> bool:
@@ -135,7 +137,7 @@ class Util:
         if not os.path.exists(full_path):
             os.makedirs(full_path, exist_ok=True)
 
-    def check_info(self, info,what_button):
+    def check_info(self, info, what_button):
         """정보 체크하는 함수
 
         what => 어느 함수에서 호출했는지. 각 버튼 실행에 따라 검사해야하는 조건 상이
@@ -153,33 +155,74 @@ class Util:
                         "알림", "설교자를 제외한 모든 정보를 입력해주세요."
                     )
                     return False
-            elif info.date == "" or info.type == "" or info.subject == "" or info.name == "":
+            elif (
+                info.date == ""
+                or info.type == ""
+                or info.subject == ""
+                or info.name == ""
+            ):
                 messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
                 return False
         elif what_button == "gm":
-            if info.date == "" or info.type==""or info.subject=="":
+            if info.date == "" or info.type == "" or info.subject == "":
                 messagebox.showinfo("알림", "설교자를 제외한 모든 정보를 입력해주세요.")
                 return False
         elif what_button == "naver":
             if info.date == "" or info.type == "" or info.name == "":
                 messagebox.showinfo("알림", "모든 정보를 입력해주세요.")
                 return False
-        
+
         return True
-    
-    def get_names(self,info,what_button):
-        name_gm,name_nas,name_naver=None,None,None
-        if what_button=="all":
-            name_gm=info.date.strftime("%Y년 %m월 %d일".encode('unicode-escape').decode()).encode().decode('unicode-escape')
-            name_nas=info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
-            name_naver=info.date.strftime("%y%m%d") + "_" + info.type + "_서울광명_" + info.name
-        elif what_button=="gm":
-            name_gm=info.date.strftime("%Y년 %m월 %d일".encode('unicode-escape').decode()).encode().decode('unicode-escape')
-        elif what_button=="nas":
-            name_nas= info.date.strftime("%Y%m%d") + "_" + info.type + "_" + info.subject + "_" + info.name
-        elif what_button=="naver":
-            name_naver=info.date.strftime("%y%m%d") + "_" + info.type + "_서울광명_" + info.name
-        return name_gm,name_nas,name_naver
+
+    def get_names(self, info, what_button):
+        name_gm, name_nas, name_naver = None, None, None
+        if what_button == "all":
+            name_gm = (
+                info.date.strftime("%Y년 %m월 %d일".encode("unicode-escape").decode())
+                .encode()
+                .decode("unicode-escape")
+            )
+            name_nas = (
+                info.date.strftime("%Y%m%d")
+                + "_"
+                + info.type
+                + "_"
+                + info.subject
+                + "_"
+                + info.name
+            )
+            name_naver = (
+                info.date.strftime("%y%m%d")
+                + "_"
+                + info.type
+                + "_서울광명_"
+                + info.name
+            )
+        elif what_button == "gm":
+            name_gm = (
+                info.date.strftime("%Y년 %m월 %d일".encode("unicode-escape").decode())
+                .encode()
+                .decode("unicode-escape")
+            )
+        elif what_button == "nas":
+            name_nas = (
+                info.date.strftime("%Y%m%d")
+                + "_"
+                + info.type
+                + "_"
+                + info.subject
+                + "_"
+                + info.name
+            )
+        elif what_button == "naver":
+            name_naver = (
+                info.date.strftime("%y%m%d")
+                + "_"
+                + info.type
+                + "_서울광명_"
+                + info.name
+            )
+        return name_gm, name_nas, name_naver
 
     def check_date_format(self, date):
         try:
@@ -218,7 +261,7 @@ class Util:
         else:
             messagebox.showinfo("알림", "파일 관련 오류 발생")"""
 
-    def sort_files_by_size(self,file_list, reverse=False):
+    def sort_files_by_size(self, file_list, reverse=False):
         """
         파일 리스트를 파일 크기 기준으로 정렬하는 함수.
 
@@ -234,3 +277,46 @@ class Util:
             return sorted(file_list, key=lambda x: x.file_size, reverse=reverse)
         else:
             raise TypeError("file_list 내의 모든 요소는 File 객체여야 합니다.")
+
+    def move_to_trash_windows(self, file_path):
+        # 파일 존재 여부 확인
+        if not os.path.exists(file_path):
+            print(f"{file_path} 파일이 존재하지 않습니다.")
+            return
+
+        # NULL 문자로 끝나는 유니코드 문자열로 경로 변환
+        file_path_w = file_path + "\0"
+
+        # SHFILEOPSTRUCT 구조체 초기화
+        shfo = SHFILEOPSTRUCT()
+        shfo.wFunc = FO_DELETE  # 파일 삭제
+        shfo.pFrom = file_path_w  # 파일 경로 설정
+        shfo.fFlags = FOF_ALLOWUNDO  # 휴지통으로 이동
+
+        # SHFileOperation 호출하여 파일을 휴지통으로 이동
+        try:
+            result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(shfo))
+            if result == 0:
+                print(f"{file_path} 파일을 휴지통으로 이동했습니다.")
+            else:
+                print(f"파일을 이동하는 중 오류 발생, 오류 코드: {result}")
+        except Exception as e:
+            print(f"파일 이동 중 오류가 발생했습니다: {e}")
+
+
+# SHFILEOPSTRUCT 구조체 정의
+class SHFILEOPSTRUCT(ctypes.Structure):
+    _fields_ = [
+        ("hwnd", wintypes.HWND),
+        ("wFunc", wintypes.UINT),
+        ("pFrom", wintypes.LPCWSTR),  # 유니코드 문자열
+        ("pTo", wintypes.LPCWSTR),
+        ("fFlags", wintypes.UINT),
+        ("fAnyOperationsAborted", wintypes.BOOL),
+        ("hNameMappings", wintypes.LPVOID),
+        ("lpszProgressTitle", wintypes.LPCWSTR),
+    ]
+
+
+FO_DELETE = 0x0003
+FOF_ALLOWUNDO = 0x0040
