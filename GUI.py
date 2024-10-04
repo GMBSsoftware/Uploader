@@ -14,7 +14,7 @@ from Gm import Gm
 
 class GUI:
     def __init__(self, root) -> None:
-        self.version = "Ver1.0"
+        self.version = "Ver1.1"
         self.root = root
         # 생성할 프로그램 가로 세로 크기
         self.app_width = 400
@@ -259,7 +259,9 @@ class GUI:
         self.info.name = self.entry_widgets_home[3].get()
 
         if not self.util.check_info(self.info, what_button):
-            return
+            return False
+        else:
+            return True
 
     def clear_widgets(self):
         self.entry_widgets_setting.clear()
@@ -376,10 +378,24 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None, None, None
             self.file_list = self.util.sort_files_by_size(self.file_list)
-            self.save_info(what_button)
+            if not self.save_info(what_button):
+                return None, None, None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None, None, None
+
+            if not self.util.is_under_file_size(self.file_list[0], 524288000):  # 500MB
+                messagebox.showinfo(
+                    "알림",
+                    "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
+                )
+                return None, None, None
+            if not self.util.is_under_file_size(self.file_list[1], 1610666666):  # 1.5GB
+                messagebox.showinfo(
+                    "알림",
+                    "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
+                )
+                return None, None, None, None
 
             # file_list는 작은 순으로 정렬. 메일, 홈페이지, 나스
             # file_name은 이름 순으로 정렬. gm, nas, naver
@@ -399,13 +415,14 @@ class GUI:
         elif what_button == "gm":
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
-            if not self.util.is_under_file_size(self.file_list[0], 524288000):  # 500MB
+            if not self.util.is_under_file_size(self.file_list[0], 1610666666):  # 1.5GB
                 messagebox.showinfo(
                     "알림",
                     "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
                 )
                 return None
-            self.save_info(what_button)
+            if not self.save_info(what_button):
+                return None, None, None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None
@@ -417,7 +434,8 @@ class GUI:
         elif what_button == "nas":
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
-            self.save_info(what_button)
+            if not self.save_info(what_button):
+                return None, None, None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None
@@ -429,7 +447,7 @@ class GUI:
         elif what_button == "naver":
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
-            if not self.util.is_under_file_size(self.file_list[0], 1610666666):  # 1.5GB
+            if not self.util.is_under_file_size(self.file_list[0], 524288000):  # 500MB
                 messagebox.showinfo(
                     "알림",
                     "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
