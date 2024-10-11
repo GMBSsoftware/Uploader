@@ -1,4 +1,6 @@
-import time, datetime, os, shutil, ctypes, pyperclip
+import time, datetime, os, shutil, ctypes, pyperclip, threading
+import tkinter as tk
+from tkinter import ttk
 from ctypes import wintypes
 from tkinter import messagebox
 from selenium.webdriver.common.by import By
@@ -260,6 +262,42 @@ class Util:
                 messagebox.showinfo("알림", "파일이 존재하지 않습니다")
         else:
             messagebox.showinfo("알림", "파일 관련 오류 발생")"""
+
+    def move_file_with_progress(self, src, dst):
+        file_path = src.full_path
+        dst = os.path.join(dst, src.file_name)
+        total_size = os.path.getsize(file_path)
+        copied_size = 0
+        block_size = 1024 * 1024  # 1MB 블록 단위
+
+        root = tk.Tk()
+        root.title("File Move Progress")
+
+        # 진행률 바 설정
+        progress_bar = ttk.Progressbar(
+            root, orient="horizontal", length=300, mode="determinate"
+        )
+        progress_bar.pack(pady=20)
+
+        status_label = tk.Label(root, text="Moving file...")
+        status_label.pack()
+
+        with open(file_path, "rb") as fsrc, open(dst, "wb") as fdst:
+            while True:
+                buffer = fsrc.read(block_size)
+                if not buffer:
+                    break
+                fdst.write(buffer)
+                copied_size += len(buffer)
+
+                # 진행률 계산
+                progress = (copied_size / total_size) * 100
+                progress_bar["value"] = progress
+                status_label.config(text=f"Progress: {progress:.2f}%")
+                root.update_idletasks()  # UI 업데이트
+
+        status_label.config(text="File move complete!")
+        root.mainloop()
 
     def sort_files_by_size(self, file_list, reverse=False):
         """

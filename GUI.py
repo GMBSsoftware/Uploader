@@ -353,7 +353,8 @@ class GUI:
         )
 
         # 파일 이동
-        self.util.moveTo(file, destination_path)
+        # self.util.moveTo(file, destination_path)
+        self.util.move_file_with_progress(file, destination_path)
 
         # 파일 이동 후 존재 여부 확인
         if os.path.exists(os.path.join(destination_path, file.file_name)):
@@ -395,7 +396,7 @@ class GUI:
                     "알림",
                     "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
                 )
-                return None, None, None, None
+                return None, None, None
 
             # file_list는 작은 순으로 정렬. 메일, 홈페이지, 나스
             # file_name은 이름 순으로 정렬. gm, nas, naver
@@ -422,7 +423,12 @@ class GUI:
                 )
                 return None
             if not self.save_info(what_button):
-                return None, None, None
+                return None
+            if self.info.type == "금요기도회":
+                messagebox.showinfo(
+                    "알림", "주일/수요예배만 홈페이지 업로드가 가능합니다."
+                )
+                return None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None
@@ -435,7 +441,7 @@ class GUI:
             if not self.util.check_count_file(self.file_list, file_count):
                 return None
             if not self.save_info(what_button):
-                return None, None, None
+                return None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None
@@ -453,7 +459,8 @@ class GUI:
                     "파일 크기가 초과되었습니다.\n\n메일 전송 : 500MB 이하\n광명 홈페이지 : 1.5GB 이하",
                 )
                 return None
-            self.save_info(what_button)
+            if not self.save_info(what_button):
+                return None
             file_names = self.util.get_names(self.info, what_button)
             if all(x is None for x in file_names):
                 return None
