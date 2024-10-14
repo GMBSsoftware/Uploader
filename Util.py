@@ -297,7 +297,6 @@ class Util:
                 root.update_idletasks()  # UI 업데이트
 
         status_label.config(text="File move complete!")
-        root.mainloop()
 
     def sort_files_by_size(self, file_list, reverse=False):
         """
